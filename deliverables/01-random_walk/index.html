@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<title>Random Walk Simulator</title>
+	<style>
+		input, button {
+			width: 100%;
+			box-sizing: border-box;
+		}
+		p, h1, h2, h3, h4, h5 {
+			margin-top: 2px;
+			margin-bottom: 2px;
+		}
+		#report-holder {
+			max-height: 300px;
+			overflow-y: scroll;
+			border: 1px solid black;
+		}
+	</style>
+</head>
+<body>
+	<h1 style="text-align: center;">Random Walk Simulator</h1>
+	<span style="font-size: 10px; text-align: center; width: 100%; display: block;">Jonathan Ginsburg. January 9, 2018.</span>
+	<p>The following is a 2-dimensional random walk simulator that calculates the estimated probability of ending within a bordered area of the initial point after a given number of steps. Note that only the animation delay can be manipulated while a simulation is being executed.</p>
+	<hr>
+	<input type="text" id="border-max" placeholder="Border limit. (Default 2)">
+	<input type="text" id="steps" placeholder="Steps to take. (Default 10)">
+	<input type="text" id="simulations" placeholder="Number of simulations. (Default 10)">
+	<input type="text" id="animation-delay" placeholder="Animation delay in ms. (Default 100)">
+	<button onclick="main()">Run simulations</button>
+	<hr>
+	<canvas id="glCanvas" width="500" height="500" style="border: 1px solid black; margin: auto; display: block;"></canvas>
+	<hr>
+	<h4>Simulation report.</h4>
+	<h5>The estimated probability of ending within the bordered area is: <span id="result">No simulation ran.</span></h5>
+	<div id="report-holder">
+		<ol id="report"></ol>
+	</div>
+	<script src="drawer.js"></script>
+</body>
+</html>
