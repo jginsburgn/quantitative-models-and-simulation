@@ -1,3 +1,17 @@
+// Load the lower tail quantile standard normal distribution inverse function.
+var https = require("https");
+https.get("https://raw.githubusercontent.com/liorzoue/js-normal-inverse/master/normal.inverse.js", (res) => {
+	var data = "";
+	res.on('data', (chunk) => {
+		data += chunk;
+	});
+	res.on('end', () => {
+		eval(data);
+		global.ltqnorm = ltqnorm;
+		reportStatistics();
+	});
+});
+
 function inRange(leftClosed, rightOpen, value) {
 	return leftClosed <= value && value < rightOpen;
 }
@@ -74,9 +88,15 @@ function getSimulations(count) {
 	return retVal;
 }
 
+function reportConfidenceInterval(percentage, average, standardDeviation, size) {
+	var inverseStandardNormal = ltqnorm(percentage/100 + (100-percentage)/2/100);
+	var lowerLimit = average - inverseStandardNormal*standardDeviation/Math.sqrt(size);
+	var upperLimit = average + inverseStandardNormal*standardDeviation/Math.sqrt(size);
+	console.log(`The confidence interval for ${percentage}% is [${lowerLimit}, ${upperLimit}].`);
+}
+
 function reportStatistics() {
 	var simulations = getSimulations(5000);
-	console.log(simulations.length);
 	var average = 0;
 	var standardDeviation = 0;
 	for (var i = 0; i < simulations.length; ++i) {
@@ -87,13 +107,11 @@ function reportStatistics() {
 		standardDeviation += Math.pow(average - simulations[i], 2);
 	}
 	standardDeviation = Math.sqrt(standardDeviation/(simulations.length - 1));
-	console.log(`Car service shop simulator by Jonathan Ginsburg A01021617. January 22, 2018.`);
 	console.log(`Mean: ${average}, Standard Deviation: ${standardDeviation}.`);
-	console.log(`The confidence interval for 75% is [${average-1.15*standardDeviation/Math.sqrt(simulations.length)}, ${average+1.15*standardDeviation/Math.sqrt(simulations.length)}]`);
-	console.log(`The confidence interval for 80% is [${average-1.2815*standardDeviation/Math.sqrt(simulations.length)}, ${average+1.2815*standardDeviation/Math.sqrt(simulations.length)}]`);
-	console.log(`The confidence interval for 85% is [${average-1.4395*standardDeviation/Math.sqrt(simulations.length)}, ${average+1.4395*standardDeviation/Math.sqrt(simulations.length)}]`);
-	console.log(`The confidence interval for 90% is [${average-1.6448*standardDeviation/Math.sqrt(simulations.length)}, ${average+1.6448*standardDeviation/Math.sqrt(simulations.length)}]`);
-	console.log(`The confidence interval for 95% is [${average-1.9599*standardDeviation/Math.sqrt(simulations.length)}, ${average+1.9599*standardDeviation/Math.sqrt(simulations.length)}]`);
+	var confidenceIntervalConfidenceLevels = [75, 80, 85, 90, 95];
+	for (var cicl of confidenceIntervalConfidenceLevels) {
+		reportConfidenceInterval(cicl, average, standardDeviation, simulations.length);
+	}
 }
 
-reportStatistics();
+console.log(`Car service shop simulator by Jonathan Ginsburg A01021617. January 22, 2018.`);
