@@ -54,7 +54,8 @@ var EventType = Object.freeze({
 	BEGIN_UNLOAD: 2,
 	BEGIN_LUNCHTIME: 3,
 	BEGIN_DAY: 4,
-	END_DAY: 5
+	END_DAY: 5,
+	END_UNLOAD: 6
 });
 
 function getEventTypeString(eventType) {
@@ -142,44 +143,147 @@ var probabilities = {
 };
 
 function digester(teamSize) {
-
+	// Global main variables
 	var queue = new EventQueue();
+
+	// Global aid variables
+	var currentEvent = undefined;
+	var isTeamBusy = false;
+	var truckCounter = 0;
+
+	// Enqueue initial events
 	var dayZero = new Event(EventType.BEGIN_DAY);
 	dayZero.triggerTime = new Time(0, 23, 0);
 	queue.enqueue(dayZero);
-	var currentEvent = undefined;
 
-	var truckCounter = 0;
+	function getNextOpenUnloadingSlot() {
 
-	//Missing digestion of other events
-	function digestBeginDay() {
-		var endDay = new Event(EventType.END_DAY);
-		endDay.triggerTime.copy(currentEvent.triggerTime);
-		endDay.triggerTime.addMinutes(8.5 * 60);
-		queue.enqueue(endDay);
+	}
+
+	function getNextUnloadingEnd() {
+
+	}
+
+	function postponeNextUnloadingsByMinutes(minutes) {
+
+	}
+
+	function digestTruckArrival() {
+		console.log(`Begin digestion of truck arrival: ${currentEvent.toString()}.`);
+
+		// Enqueue next truck arrival
 		var nextTruckArrival = new Event(EventType.TRUCK_ARRIVAL);
-		nextTruckArrival.triggerTime.copy(currentEvent.triggerTime);
+		nextTruckArrival.copy(currentEvent.triggerTime);
 		nextTruckArrival.triggerTime.addMinutes(probabilities.getTimeBetweenArrivals());
 		nextTruckArrival.unloadingTime = probabilities.getUnloadingTime(teamSize);
 		nextTruckArrival.truckNumber = truckCounter++;
 		queue.enqueue(nextTruckArrival);
-		console.log(queue.toString());
+
+		// Enqueue current truck unloading after latest truck unloading
+		var thisTruckUnloading = new Event(EventType.BEGIN_UNLOAD);
+		thisTruckUnloading.unloadingTime = currentEvent.unloadingTime;
+		thisTruckUnloading.truckNumber = currentEvent.truckNumber;
+		thisTruckUnloading.copy(getNextOpenUnloadingSlot());
+		queue.enqueue(thisTruckUnloading);
+
+		// Continue digesting
 		digest();
+	}
+
+	function digestBeginUnload() {
+		console.log(`Begin digestion of truck unloading: ${currentEvent.toString()}.`);
+
+		// Make team busy
+		isTeamBusy = true;
+
+		// Enqueue end unload
+		var endUnload = new Event(EventType.BEGIN_UNLOAD);
+		endUnload.copy(currentEvent.triggerTime);
+		endUnload.triggerTime.addMinutes(currentEvent.unloadingTime);
+		endUnload.truckNumber = currentEvent.truckNumber;
+		queue.enqueue(endUnload);
+
+		// Record finances
+
+		// Continue digesting
+		digest();
+	}
+
+	function digestBeginLunchtime() {
+		console.log(`Begin digestion of begin lunchtime: ${currentEvent.toString()}.`);
+
+		// Check if lunch must happen or if team is in leisure; if so, digest.
+		if (!isTeamBusy || currentEvent.postponed) return digest();
+		// If team is busy and lunch has not been postponed, postpone it once
+		currentEvent.postponed = true;
+		currentEvent.triggerTime.copy(getNextUnloadingEnd());
+		postponeNextUnloadingsByMinutes(30);
+		queue.enqueue(currentEvent);
+
+		// Continue digesting
+		digest();
+	}
+
+	function digestBeginDay() {
+		console.log(`Begin digestion of begin day: ${currentEvent.toString()}.`);
+
+		// Enqueue day end
+		var endDay = new Event(EventType.END_DAY);
+		endDay.triggerTime.copy(currentEvent.triggerTime);
+		endDay.triggerTime.addMinutes(8.5 * 60);
+		queue.enqueue(endDay);
+
+		// Enqueue lunchtime
+		var lunchTime = new Event(EventType.BEGIN_LUNCHTIME);
+		lunchTime.postponed = false;
+		lunchTime.triggerTime.copy(currentEvent.triggerTime);
+		lunchTime.triggerTime.addMinutes(240);
+		queue.enqueue(lunchTime);
+
+		// Continue digesting
+		digest();
+	}
+
+	function digestEndDay() {
+		console.log(`Begin digestion of day end: ${currentEvent.toString()}.`);
+
+		// Enqueue day begin
+
+		// Postpone all non currently unloading trucks for tomorrow
+
+		//Continue digesting
+		digest();
+	}
+
+	function digestEndUnload() {
+		console.log(`Begin digestion of unloading end: ${currentEvent.toString()}.`);
 	}
 
 	function digest() {
 		currentEvent = queue.dequeue();
 		if (currentEvent == undefined) return;
 		switch (currentEvent.eventType) {
+			case EventType.UNDEFINED:
+				throw new Error("Event was undefined.");
+				break;
+			case EventType.TRUCK_ARRIVAL:
+				digestTruckArrival();
+				break;
+			case EventType.BEGIN_UNLOAD:
+				digestBeginUnload();
+				break;
+			case EventType.BEGIN_LUNCHTIME:
+				digestBeginLunchtime();
+				break;
 			case EventType.BEGIN_DAY:
 				digestBeginDay();
 				break;
 			case EventType.END_DAY:
-
-			case EventType.BEGIN_UNLOAD:
-			case EventType.BEGIN_LUNCHTIME:
-			case EventType.BEGIN_DAY:
-			case EventType.END_DAY:
+				digestEndDay();
+				break;
+			case EventType.END_UNLOAD:
+				digestEndUnload();
+				break;
 		}
 	}
 
