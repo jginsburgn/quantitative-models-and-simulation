@@ -1,0 +1,1 @@
+cat ../RANDOM_NUMBERS_SEED_5186479483157648.txt | node main.js;
