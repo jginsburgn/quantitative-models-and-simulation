@@ -1,0 +1,15 @@
+{
+  "name": "preventec",
+  "version": "1.0.0",
+  "description": "Preventec is a natural disaster safety simulator.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.3",
+    "probability-distributions": "^0.9.1"
+  }
+}
